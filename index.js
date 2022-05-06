@@ -1,49 +1,34 @@
-const { Client, Intents } = require("discord.js");
-const { token } = require("./config.json");
-const { PrismaClient } = require("@prisma/client");
+const fs = require('node:fs');
+const { Client, Collection, Intents } = require('discord.js');
+const { token } = require('./config.json');
 
-const prisma = new PrismaClient();
 const client = new Client({ intents: [Intents.FLAGS.GUILDS] });
 
-// When the client is ready, run this code (only once)
-client.once("ready", () => {
-  console.log("Ready!");
+client.commands = new Collection();
+const commandFiles = fs.readdirSync('./commands').filter(file => file.endsWith('.js'));
+
+for (const file of commandFiles) {
+	const command = require(`./commands/${file}`);
+	client.commands.set(command.data.name, command);
+}
+
+client.once('ready', () => {
+	console.log('Ready!');
 });
 
-client.on("interactionCreate", async (interaction) => {
-  // If user don't exist in the database, create it
-  if (!(await prisma.user.findUnique({ where: { id: interaction.user.id } }))) {
-    await prisma.user.create({
-      data: {
-        id: interaction.user.id,
-        tag: interaction.user.tag,
-      },
-    });
-  } else {
-    const userData = await prisma.user.findUnique({
-      where: { id: interaction.user.id },
-    });
-    console.log(userData);
+client.on('interactionCreate', async interaction => {
+	if (!interaction.isCommand()) return;
 
-    if (!interaction.isCommand()) return;
+	const command = client.commands.get(interaction.commandName);
 
-    const { commandName } = interaction;
+	if (!command) return;
 
-    if (commandName === "ping") {
-      await interaction.reply("Pong!");
-    } else if (commandName === "server") {
-      await interaction.reply(
-        `Server name: ${interaction.guild.name}\nTotal members: ${interaction.guild.memberCount}`
-      );
-    } else if (commandName === "user") {
-      await interaction.reply(
-        `Your tag: ${interaction.user.tag}\nYour id: ${interaction.user.id}`
-      );
-    } else if (commandName === "coins") {
-      await interaction.reply(`You have ${userData.coins} coins.`);
-    }
-  }
+	try {
+		await command.execute(interaction);
+	} catch (error) {
+		console.error(error);
+		await interaction.reply({ content: 'There was an error while executing this command!', ephemeral: true });
+	}
 });
 
-// Login to Discord with your client's token
 client.login(token);

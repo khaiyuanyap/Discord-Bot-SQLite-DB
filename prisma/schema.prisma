@@ -5,13 +5,18 @@ generator client {
   provider = "prisma-client-js"
 }
 
+generator docs {
+  provider = "node node_modules/prisma-docs-generator"
+  output   = "../docs"
+}
+
 datasource db {
   provider = "sqlite"
   url      = "file:./dev.db"
 }
 
 model User {
-  id    String @id
-  coins Int    @default(0)
+  id    String  @id
+  coins Int     @default(0)
   bio   String?
 }

@@ -7,3 +7,11 @@ A template for creating Discord Bots with database interactions. Provided exampl
 npm install && cp config.example.json config.json && rm config.example.json
 ```
 
+## Developing the DiscordJS Bot
+```bash
+nodemon deploy-commands.js
+```
+```bash
+nodemon index.js
+```
+
